@@ -1,0 +1,23 @@
+{
+  "name": "la-rifa-ganadora",
+  "version": "1.0.0",
+  "description": "Plataforma web/PWA de rifas y sorteos - modulo de La Balotera",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "express-session": "^1.18.0",
+    "sqlite3": "^5.1.7",
+    "sqlite": "^5.1.1",
+    "socket.io": "^4.7.5",
+    "bcryptjs": "^2.4.3",
+    "dotenv": "^16.4.5",
+    "connect-sqlite3": "^0.9.13"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Ingreso Administrador - La Rifa Ganadora</title>
+  <meta name="theme-color" content="#0b0b14" />
+  <link rel="manifest" href="/manifest.json" />
+  <link rel="icon" href="/icons/icon-192.png" />
+  <link rel="stylesheet" href="/css/theme.css" />
+  <style>
+    .login-wrap {
+      position: relative;
+      z-index: 1;
+      min-height: 100dvh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .login-card {
+      width: 100%;
+      max-width: 380px;
+      padding: 36px 30px;
+      text-align: center;
+    }
+    .login-card h1 {
+      font-size: 22px;
+      margin-bottom: 4px;
+    }
+    .login-card p {
+      color: #9a9ac0;
+      font-size: 14px;
+      margin-top: 0;
+      margin-bottom: 24px;
+    }
+    .field {
+      text-align: left;
+      margin-bottom: 16px;
+    }
+    .field label {
+      display: block;
+      font-size: 13px;
+      color: #c8c8e8;
+      margin-bottom: 6px;
+    }
+    .field input {
+      width: 100%;
+      padding: 12px 14px;
+      border-radius: 10px;
+      border: 1px solid rgba(124, 58, 237, 0.35);
+      background: rgba(11, 11, 20, 0.6);
+      color: var(--color-text);
+      font-size: 15px;
+    }
+    .field input:focus {
+      outline: none;
+      border-color: var(--color-primary);
+    }
+    #login-error {
+      color: #ff6b6b;
+      font-size: 13px;
+      min-height: 18px;
+      margin-bottom: 8px;
+    }
+    .btn-primary.full {
+      width: 100%;
+      padding: 14px;
+      font-size: 16px;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="particles-canvas"></canvas>
+  <div class="login-wrap">
+    <form class="card login-card" id="login-form">
+      <h1 class="text-gradient">Panel Administrativo</h1>
+      <p>La Rifa Ganadora</p>
+
+      <div class="field">
+        <label for="username">Usuario</label>
+        <input type="text" id="username" name="username" autocomplete="username" required />
+      </div>
+      <div class="field">
+        <label for="password">Contraseña</label>
+        <input type="password" id="password" name="password" autocomplete="current-password" required />
+      </div>
+
+      <div id="login-error"></div>
+
+      <button type="submit" class="btn-primary full">Ingresar</button>
+    </form>
+  </div>
+
+  <script src="/js/particles.js"></script>
+  <script>
+    if (window.RifaParticles) {
+      window.RifaParticles.init('particles-canvas', { count: 40 });
+    }
+
+    const form = document.getElementById('login-form');
+    const errorBox = document.getElementById('login-error');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      errorBox.textContent = '';
+      const username = document.getElementById('username').value.trim();
+      const password = document.getElementById('password').value;
+
+      try {
+        const res = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password })
+        });
+        const data = await res.json();
+        if (!data.ok) {
+          errorBox.textContent = data.error || 'No se pudo iniciar sesión.';
+          return;
+        }
+        window.location.href = '/admin';
+      } catch (err) {
+        errorBox.textContent = 'Error de conexión con el servidor.';
+      }
+    });
+  </script>
+</body>
+</html>

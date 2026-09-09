@@ -1,0 +1,24 @@
+services:
+  - type: web
+    name: la-rifa-ganadora
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: ADMIN_USER
+        value: ADMIN
+      - key: ADMIN_PASSWORD
+        value: ADMIN123
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: DB_PATH
+        value: /var/data/rifa.db
+      - key: SESSION_DIR
+        value: /var/data
+    disk:
+      name: rifa-data
+      mountPath: /var/data
+      sizeGB: 1

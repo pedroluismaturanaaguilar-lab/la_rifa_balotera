@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Panel Administrativo - La Rifa Ganadora</title>
+  <meta name="theme-color" content="#0b0b14" />
+  <link rel="manifest" href="/manifest.json" />
+  <link rel="icon" href="/icons/icon-192.png" />
+  <link rel="stylesheet" href="/css/theme.css" />
+  <style>
+    .topbar {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 18px 26px;
+      border-bottom: 1px solid rgba(124, 58, 237, 0.25);
+    }
+    .topbar h1 { font-size: 18px; margin: 0; }
+    .btn-ghost {
+      background: transparent;
+      border: 1px solid rgba(255,255,255,0.2);
+      color: var(--color-text);
+      padding: 8px 16px;
+      border-radius: 999px;
+      font-size: 13px;
+    }
+    .modules-grid {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+      gap: 16px;
+      padding: 26px;
+    }
+    .module-card {
+      padding: 20px;
+      text-align: left;
+      opacity: 0.55;
+    }
+    .module-card.active { opacity: 1; }
+    .module-card h3 { margin: 0 0 6px; font-size: 15px; }
+    .module-card p { margin: 0; font-size: 12px; color: #9a9ac0; }
+    .badge-soon {
+      display: inline-block;
+      margin-top: 8px;
+      font-size: 10px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--color-accent);
+    }
+
+    .settings-panel {
+      position: relative;
+      z-index: 1;
+      margin: 0 26px 40px;
+      padding: 26px;
+    }
+    .settings-panel h2 { margin-top: 0; font-size: 18px; }
+    .settings-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 16px;
+      margin-bottom: 18px;
+    }
+    .field label {
+      display: block;
+      font-size: 13px;
+      color: #c8c8e8;
+      margin-bottom: 6px;
+    }
+    .field input {
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: 8px;
+      border: 1px solid rgba(124, 58, 237, 0.35);
+      background: rgba(11, 11, 20, 0.6);
+      color: var(--color-text);
+    }
+    .field input[type="color"] { padding: 4px; height: 42px; }
+    #save-status { font-size: 13px; margin-top: 10px; min-height: 18px; }
+    #save-status.ok { color: var(--color-primary); }
+    #save-status.err { color: #ff6b6b; }
+  </style>
+</head>
+<body>
+  <canvas id="particles-canvas"></canvas>
+
+  <div class="topbar">
+    <h1 class="text-gradient">⚙ Panel Administrativo — La Rifa Ganadora</h1>
+    <button class="btn-ghost" id="logout-btn">Cerrar sesión</button>
+  </div>
+
+  <section class="modules-grid">
+    <div class="card module-card active"><h3>⚙ Configuración general</h3><p>Nombre, bienvenida, colores</p></div>
+    <div class="card module-card"><h3>🎁 Configuración de la rifa</h3><p>Nombre, premios, fechas</p><span class="badge-soon">Fase 2</span></div>
+    <div class="card module-card active"><h3>🎟 Participantes</h3><p>Ver abajo — gestión completa</p></div>
+    <div class="card module-card active"><h3>🎫 Boletas</h3><p>Ver abajo — códigos por participante</p></div>
+    <div class="card module-card active"><h3>🎮 Juego / Sorteo</h3><p>Ver abajo — sorteo en vivo</p></div>
+    <div class="card module-card"><h3>🏆 Historial de ganadores</h3><p>Registro automático</p><span class="badge-soon">Fase 6</span></div>
+    <div class="card module-card"><h3>📢 Mensajes / promociones</h3><p>Próxima rifa</p><span class="badge-soon">Fase 6</span></div>
+    <div class="card module-card"><h3>🖥 Pantalla pública</h3><p>Modo TV / pantalla completa</p><span class="badge-soon">Fase 6</span></div>
+    <div class="card module-card"><h3>🔊 Configuración de voz</h3><p>Voz, velocidad, volumen</p><span class="badge-soon">Fase 5</span></div>
+    <div class="card module-card"><h3>✨ Animaciones</h3><p>Efectos y sonidos</p><span class="badge-soon">Fase 5</span></div>
+  </section>
+
+  <section class="card settings-panel">
+    <h2>Configuración general</h2>
+    <p style="color:#9a9ac0; font-size:13px; margin-top:-10px;">
+      Estos textos y colores se guardan en la base de datos y se reflejan de inmediato en la pantalla de bienvenida — sin tocar código.
+    </p>
+
+    <form id="settings-form">
+      <div class="settings-grid">
+        <div class="field">
+          <label for="platform_name">Nombre de la plataforma</label>
+          <input type="text" id="platform_name" name="platform_name" />
+        </div>
+        <div class="field">
+          <label for="welcome_button_text">Texto del botón</label>
+          <input type="text" id="welcome_button_text" name="welcome_button_text" />
+        </div>
+        <div class="field" style="grid-column: 1 / -1;">
+          <label for="welcome_title">Título de bienvenida</label>
+          <input type="text" id="welcome_title" name="welcome_title" />
+        </div>
+        <div class="field" style="grid-column: 1 / -1;">
+          <label for="welcome_subtitle">Subtítulo de bienvenida</label>
+          <input type="text" id="welcome_subtitle" name="welcome_subtitle" />
+        </div>
+        <div class="field">
+          <label for="color_primary">Color primario (verde)</label>
+          <input type="color" id="color_primary" name="color_primary" />
+        </div>
+        <div class="field">
+          <label for="color_secondary">Color secundario (morado)</label>
+          <input type="color" id="color_secondary" name="color_secondary" />
+        </div>
+        <div class="field">
+          <label for="color_accent">Color de acento (dorado)</label>
+          <input type="color" id="color_accent" name="color_accent" />
+        </div>
+      </div>
+
+      <button type="submit" class="btn-primary">Guardar cambios</button>
+      <div id="save-status"></div>
+    </form>
+  </section>
+
+  <section class="card settings-panel" id="draw-panel">
+    <h2>🎮 Sorteo en vivo</h2>
+    <p style="color:#9a9ac0; font-size:13px; margin-top:-10px;">
+      Este control ya funciona de principio a fin: escribe los participantes (o carga los que guardaste arriba), prepara la rifa, y controla el sorteo mientras la
+      <a href="/pantalla" target="_blank" style="color: var(--color-accent);">pantalla pública</a>
+      (la que ve la gente / el televisor) hace la cuenta regresiva, la animación y habla sola. Ábrela en otra pestaña, en otro monitor o en la TV antes de iniciar.
+    </p>
+
+    <div class="settings-grid">
+      <div class="field" style="grid-column: 1 / -1;">
+        <label for="draw_prize">¿Qué se está rifando?</label>
+        <input type="text" id="draw_prize" placeholder="Ej: Mercado por $500.000" />
+      </div>
+      <div class="field" style="grid-column: 1 / -1;">
+        <label for="draw_participants">Participantes (uno por línea)</label>
+        <textarea id="draw_participants" rows="5" placeholder="Pedro&#10;Juan&#10;Carlos&#10;María" style="width:100%; padding:10px 12px; border-radius:8px; border:1px solid rgba(124,58,237,0.35); background: rgba(11,11,20,0.6); color: var(--color-text); font-family: inherit;"></textarea>
+        <button type="button" class="btn-ghost" id="draw-load-saved-btn" style="margin-top:8px;">↺ Cargar participantes guardados (arriba)</button>
+      </div>
+    </div>
+
+    <div style="display:flex; gap:12px; flex-wrap:wrap; align-items:center;">
+      <button type="button" class="btn-primary" id="draw-prepare-btn">Preparar rifa</button>
+      <button type="button" class="btn-primary" id="draw-start-btn" disabled>Iniciar sorteo</button>
+      <button type="button" class="btn-ghost" id="draw-reset-btn">Reiniciar</button>
+      <span id="draw-status" style="font-size:13px; color:#9a9ac0;">Estado: sin preparar</span>
+    </div>
+  </section>
+
+  <section class="card settings-panel" id="participants-panel">
+    <h2>🎟 Participantes y Boletas</h2>
+    <p style="color:#9a9ac0; font-size:13px; margin-top:-10px;">
+      Se guardan en la base de datos: si cierras el navegador o apagas el computador, siguen ahí. El número es opcional (solo para la modalidad por número); el sistema no deja repetir números ni códigos de boleta.
+    </p>
+
+    <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:18px; align-items:flex-end;">
+      <div class="field">
+        <label for="p_name">Nombre</label>
+        <input type="text" id="p_name" placeholder="Ej: Pedro" />
+      </div>
+      <div class="field">
+        <label for="p_number">Número (opcional)</label>
+        <input type="number" id="p_number" placeholder="Ej: 7" style="width:120px;" />
+      </div>
+      <button type="button" class="btn-primary" id="p_add_btn">Agregar participante</button>
+    </div>
+    <div id="p_error" style="color:#ff6b6b; font-size:13px; margin-bottom:10px;"></div>
+
+    <div id="participants-list"></div>
+  </section>
+
+  <!-- Plantilla de una fila de participante (se clona por JS) -->
+  <template id="participant-row-template">
+    <div class="card" style="padding:16px; margin-bottom:12px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+        <div>
+          <strong class="p-name"></strong>
+          <span class="p-number" style="color: var(--color-accent); margin-left:8px; font-size:13px;"></span>
+          <span class="p-ticket-count" style="color:#9a9ac0; font-size:12px; margin-left:8px;"></span>
+        </div>
+        <div style="display:flex; gap:8px;">
+          <button type="button" class="btn-ghost p-toggle-tickets">Boletas</button>
+          <button type="button" class="btn-ghost p-delete">Eliminar</button>
+        </div>
+      </div>
+      <div class="p-tickets-box hidden" style="margin-top:14px;">
+        <div class="p-tickets-list" style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:10px;"></div>
+        <div style="display:flex; gap:8px;">
+          <input type="text" class="p-tickets-input" placeholder="Códigos separados por coma, ej: 00125,00126,00127" style="flex:1; padding:8px 10px; border-radius:8px; border:1px solid rgba(124,58,237,0.35); background: rgba(11,11,20,0.6); color: var(--color-text);" />
+          <button type="button" class="btn-primary p-tickets-add" style="padding:8px 16px; font-size:13px;">Agregar</button>
+        </div>
+        <div class="p-tickets-error" style="color:#ff6b6b; font-size:12px; margin-top:6px;"></div>
+      </div>
+    </div>
+  </template>
+
+  <script src="/js/particles.js"></script>
+  <script src="/js/admin-dashboard.js"></script>
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/js/admin-participants.js"></script>
+  <script src="/js/admin-draw.js"></script>
+</body>
+</html>

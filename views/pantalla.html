@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>La Rifa Ganadora — Pantalla del Sorteo</title>
+  <meta name="theme-color" content="#0b0b14" />
+  <link rel="manifest" href="/manifest-pantalla.json" />
+  <link rel="icon" href="/icons/icon-192.png" />
+  <link rel="stylesheet" href="/css/theme.css" />
+  <style>
+    .stage {
+      position: relative;
+      z-index: 1;
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 24px;
+      gap: 18px;
+    }
+    .eyebrow {
+      font-size: 14px;
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      color: var(--color-accent);
+      opacity: 0.9;
+    }
+    .prize-text {
+      font-size: clamp(20px, 3.4vw, 30px);
+      color: #d9d9f0;
+      max-width: 700px;
+    }
+    .countdown-number {
+      font-size: clamp(90px, 22vw, 220px);
+      font-weight: 900;
+      line-height: 1;
+      background: linear-gradient(90deg, var(--color-primary), var(--color-accent), var(--color-secondary));
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      animation: countdown-pop 0.5s ease;
+    }
+    @keyframes countdown-pop {
+      0% { transform: scale(0.4); opacity: 0; }
+      60% { transform: scale(1.15); opacity: 1; }
+      100% { transform: scale(1); }
+    }
+    .reel {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    .reel-slot {
+      width: clamp(48px, 8vw, 90px);
+      height: clamp(64px, 11vw, 120px);
+      border-radius: 14px;
+      background: rgba(20, 20, 43, 0.85);
+      border: 2px solid rgba(124, 58, 237, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: clamp(30px, 6vw, 60px);
+      font-weight: 800;
+      color: var(--color-text);
+      box-shadow: var(--shadow-glow);
+      overflow: hidden;
+    }
+    .reel-slot.locked {
+      border-color: var(--color-accent);
+      box-shadow: 0 0 35px rgba(255, 215, 0, 0.55);
+      color: var(--color-accent);
+    }
+    .winner-name {
+      font-size: clamp(40px, 8vw, 90px);
+      font-weight: 900;
+      background: linear-gradient(90deg, var(--color-accent), var(--color-primary));
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      animation: winner-pop 0.6s cubic-bezier(.2,1.4,.4,1) both;
+    }
+    @keyframes winner-pop {
+      0% { transform: scale(0.3) rotate(-6deg); opacity: 0; }
+      100% { transform: scale(1) rotate(0deg); opacity: 1; }
+    }
+    .celebrate-emoji { font-size: clamp(36px, 6vw, 60px); }
+    .hidden { display: none !important; }
+    #confetti-canvas {
+      position: fixed;
+      inset: 0;
+      z-index: 2;
+      pointer-events: none;
+    }
+    .fullscreen-btn {
+      position: fixed;
+      top: 16px;
+      right: 16px;
+      z-index: 3;
+      background: rgba(20,20,43,0.7);
+      border: 1px solid rgba(255,255,255,0.2);
+      color: var(--color-text);
+      padding: 8px 14px;
+      border-radius: 999px;
+      font-size: 13px;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="particles-canvas"></canvas>
+  <canvas id="confetti-canvas"></canvas>
+  <button class="fullscreen-btn" id="fullscreen-btn">⛶ Pantalla completa</button>
+
+  <div class="stage">
+    <!-- Estado: esperando -->
+    <div id="state-idle">
+      <div class="logo-badge" style="margin: 0 auto 18px;">🎟</div>
+      <p class="eyebrow">La Rifa Ganadora</p>
+      <p class="prize-text">Esperando a que el administrador prepare la rifa...</p>
+      <button class="btn-primary" id="enable-sound-btn" style="margin-top: 16px;">🔊 Activar sonido de la pantalla</button>
+      <p id="sound-ready-msg" class="hidden" style="color: var(--color-primary); font-size: 13px;">Sonido activado. Ya puedes dejar esta pantalla en la TV.</p>
+    </div>
+
+    <!-- Estado: preparado, esperando inicio -->
+    <div id="state-prepared" class="hidden">
+      <p class="eyebrow">Premio de hoy</p>
+      <p class="prize-text" id="prepared-prize"></p>
+      <p style="color:#9a9ac0; font-size:14px;">Ya está todo listo. En cualquier momento comienza el sorteo...</p>
+    </div>
+
+    <!-- Estado: cuenta regresiva -->
+    <div id="state-countdown" class="hidden">
+      <p class="eyebrow">Prepárate</p>
+      <div class="countdown-number" id="countdown-number">10</div>
+    </div>
+
+    <!-- Estado: girando (reel) -->
+    <div id="state-spinning" class="hidden">
+      <p class="eyebrow">Buscando al ganador...</p>
+      <div class="reel" id="reel-container"></div>
+    </div>
+
+    <!-- Estado: ganador -->
+    <div id="state-winner" class="hidden">
+      <div class="celebrate-emoji">🎉 TENEMOS GANADOR 🎉</div>
+      <div class="winner-name" id="winner-name-el"></div>
+      <p class="prize-text" id="winner-prize-el"></p>
+    </div>
+  </div>
+
+  <script src="/js/particles.js"></script>
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/js/pantalla.js"></script>
+</body>
+</html>
