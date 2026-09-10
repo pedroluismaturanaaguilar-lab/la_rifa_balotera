@@ -149,6 +149,62 @@
     </form>
   </section>
 
+  <section class="card settings-panel" id="raffle-info-panel">
+    <h2>🎁 Información de la rifa (se muestra en la pantalla pública)</h2>
+    <p style="color:#9a9ac0; font-size:13px; margin-top:-10px;">
+      Estos 4 datos van separados y se guardan aunque cierres todo — solo se ocultan de la pantalla pública automáticamente cuando esa rifa ya se jugó.
+    </p>
+    <form id="raffle-info-form">
+      <div class="settings-grid">
+        <div class="field" style="grid-column: 1 / -1;">
+          <label for="raffle_prize_name">GRAN RIFA: ¿qué se está rifando?</label>
+          <input type="text" id="raffle_prize_name" name="raffle_prize_name" placeholder="Ej: Mercado por $500.000" />
+        </div>
+        <div class="field">
+          <label for="raffle_start_date">INICIO (fecha)</label>
+          <input type="date" id="raffle_start_date" name="raffle_start_date" />
+        </div>
+        <div class="field">
+          <label for="raffle_end_date">FIN / día del sorteo (fecha)</label>
+          <input type="date" id="raffle_end_date" name="raffle_end_date" />
+        </div>
+        <div class="field" style="grid-column: 1 / -1;">
+          <label for="raffle_conditions">Condiciones para participar (hasta 3 líneas)</label>
+          <textarea id="raffle_conditions" name="raffle_conditions" rows="3" placeholder="Ej: Boletas desde $5.000&#10;Participa desde 1 boleta&#10;Gran sorteo el 30 de septiembre" style="width:100%; padding:10px 12px; border-radius:8px; border:1px solid rgba(124,58,237,0.35); background: rgba(11,11,20,0.6); color: var(--color-text); font-family: inherit;"></textarea>
+        </div>
+        <div class="field" style="display:flex; align-items:center; gap:10px;">
+          <input type="checkbox" id="raffle_info_visible" name="raffle_info_visible" style="width:auto;" />
+          <label for="raffle_info_visible" style="margin:0;">Mostrar esto ahora en la pantalla pública</label>
+        </div>
+      </div>
+      <button type="submit" class="btn-primary">Guardar información de la rifa</button>
+      <div id="raffle-info-status"></div>
+    </form>
+  </section>
+
+  <section class="card settings-panel" id="voice-panel">
+    <h2>🔊 Velocidad de la voz y de los números</h2>
+    <p style="color:#9a9ac0; font-size:13px; margin-top:-10px;">
+      Ajusta qué tan rápido habla el sistema y qué tan rápido pasan los números en la cuenta regresiva. Se aplica en la pantalla pública de inmediato.
+    </p>
+    <form id="voice-form">
+      <div class="settings-grid">
+        <div class="field">
+          <label for="voice_rate">Velocidad de la voz (0.5 = lento, 1 = normal, 1.5 = rápido)</label>
+          <input type="range" id="voice_rate" name="voice_rate" min="0.5" max="1.5" step="0.05" />
+          <div id="voice_rate_value" style="font-size:12px; color:#9a9ac0; margin-top:4px;"></div>
+        </div>
+        <div class="field">
+          <label for="countdown_pace_seconds">Segundos que dura cada número en la cuenta regresiva</label>
+          <input type="range" id="countdown_pace_seconds" name="countdown_pace_seconds" min="0.8" max="3" step="0.1" />
+          <div id="countdown_pace_value" style="font-size:12px; color:#9a9ac0; margin-top:4px;"></div>
+        </div>
+      </div>
+      <button type="submit" class="btn-primary">Guardar velocidad</button>
+      <div id="voice-status"></div>
+    </form>
+  </section>
+
   <section class="card settings-panel" id="draw-panel">
     <h2>🎮 Sorteo en vivo</h2>
     <p style="color:#9a9ac0; font-size:13px; margin-top:-10px;">
@@ -163,9 +219,33 @@
         <input type="text" id="draw_prize" placeholder="Ej: Mercado por $500.000" />
       </div>
       <div class="field" style="grid-column: 1 / -1;">
-        <label for="draw_participants">Participantes (uno por línea)</label>
-        <textarea id="draw_participants" rows="5" placeholder="Pedro&#10;Juan&#10;Carlos&#10;María" style="width:100%; padding:10px 12px; border-radius:8px; border:1px solid rgba(124,58,237,0.35); background: rgba(11,11,20,0.6); color: var(--color-text); font-family: inherit;"></textarea>
-        <button type="button" class="btn-ghost" id="draw-load-saved-btn" style="margin-top:8px;">↺ Cargar participantes guardados (arriba)</button>
+        <label for="draw_mode">Modalidad del sorteo</label>
+        <select id="draw_mode" style="width:100%; padding:10px 12px; border-radius:8px; border:1px solid rgba(124,58,237,0.35); background: rgba(11,11,20,0.6); color: var(--color-text);">
+          <option value="name">Por nombre (elige al azar entre los participantes)</option>
+          <option value="number">Por número (1 al 50, o el rango que quieras)</option>
+        </select>
+      </div>
+
+      <div id="mode-name-fields" style="grid-column: 1 / -1;">
+        <div class="field">
+          <label for="draw_participants">Participantes (uno por línea)</label>
+          <textarea id="draw_participants" rows="5" placeholder="Pedro&#10;Juan&#10;Carlos&#10;María" style="width:100%; padding:10px 12px; border-radius:8px; border:1px solid rgba(124,58,237,0.35); background: rgba(11,11,20,0.6); color: var(--color-text); font-family: inherit;"></textarea>
+          <button type="button" class="btn-ghost" id="draw-load-saved-btn" style="margin-top:8px;">↺ Cargar participantes guardados (arriba)</button>
+        </div>
+      </div>
+
+      <div id="mode-number-fields" class="hidden" style="grid-column: 1 / -1; display:flex; gap:16px; flex-wrap:wrap;">
+        <div class="field">
+          <label for="draw_range_min">Número mínimo</label>
+          <input type="number" id="draw_range_min" value="1" style="width:120px;" />
+        </div>
+        <div class="field">
+          <label for="draw_range_max">Número máximo</label>
+          <input type="number" id="draw_range_max" value="50" style="width:120px;" />
+        </div>
+        <p style="color:#9a9ac0; font-size:13px; flex-basis:100%;">
+          Usa el módulo de <strong>Participantes</strong> arriba para escribir el nombre de cada persona y el número que dijo (campo "Número"). Al preparar, el sistema toma automáticamente a todos los que tengan número dentro de este rango.
+        </p>
       </div>
     </div>
 
@@ -226,6 +306,7 @@
 
   <script src="/js/particles.js"></script>
   <script src="/js/admin-dashboard.js"></script>
+  <script src="/js/admin-raffle-info.js"></script>
   <script src="/socket.io/socket.io.js"></script>
   <script src="/js/admin-participants.js"></script>
   <script src="/js/admin-draw.js"></script>
