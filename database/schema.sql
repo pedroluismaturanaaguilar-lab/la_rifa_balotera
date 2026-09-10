@@ -106,7 +106,14 @@ INSERT OR IGNORE INTO settings (key, value) VALUES
   ('color_secondary', '#7c3aed'),
   ('color_accent', '#ffd700'),
   ('voice_enabled', 'true'),
-  ('voice_rate', '1'),
+  ('voice_rate', '0.85'),
   ('voice_volume', '1'),
+  ('countdown_pace_seconds', '1.6'),
   ('sound_enabled', 'true'),
-  ('winner_message_template', '¡Felicitaciones {NOMBRE}! Has ganado {PREMIO}. Por favor acércate a reclamar tu premio. Muchas gracias por participar.');
+  ('winner_message_template', '¡Felicitaciones {NOMBRE}! Has ganado {PREMIO}. Por favor acércate a reclamar tu premio. Muchas gracias por participar.'),
+  ('raffle_prize_name', ''),
+  ('raffle_start_date', ''),
+  ('raffle_end_date', ''),
+  ('raffle_conditions', ''),
+  ('raffle_info_visible', 'false');
+X  
