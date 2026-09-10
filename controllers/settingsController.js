@@ -15,7 +15,13 @@ async function getPublicSettings(req, res) {
       'voice_enabled',
       'voice_rate',
       'voice_volume',
-      'sound_enabled'
+      'countdown_pace_seconds',
+      'sound_enabled',
+      'raffle_prize_name',
+      'raffle_start_date',
+      'raffle_end_date',
+      'raffle_conditions',
+      'raffle_info_visible'
     ];
     const publicSettings = {};
     for (const key of publicKeys) {
