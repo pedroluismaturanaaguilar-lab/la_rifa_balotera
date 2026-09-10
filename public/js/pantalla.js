@@ -9,17 +9,38 @@
     preparedPrize: document.getElementById('prepared-prize'),
     countdown: document.getElementById('state-countdown'),
     countdownNumber: document.getElementById('countdown-number'),
+    missed: document.getElementById('state-missed'),
+    missedNumber: document.getElementById('missed-number'),
     spinning: document.getElementById('state-spinning'),
     reelContainer: document.getElementById('reel-container'),
+    revealCountdown: document.getElementById('state-reveal-countdown'),
+    revealCountdownNumber: document.getElementById('reveal-countdown-number'),
     winner: document.getElementById('state-winner'),
     winnerName: document.getElementById('winner-name-el'),
     winnerPrize: document.getElementById('winner-prize-el')
   };
 
   function showOnly(key) {
-    ['idle', 'prepared', 'countdown', 'spinning', 'winner'].forEach((k) => {
+    ['idle', 'prepared', 'countdown', 'missed', 'spinning', 'revealCountdown', 'winner'].forEach((k) => {
       els[k].classList.toggle('hidden', k !== key);
     });
+  }
+
+  // ---------- Ajustes (velocidad de voz / ritmo) ----------
+  let voiceRate = 0.85;
+  let paceSeconds = 1.6;
+
+  async function loadVoiceSettings() {
+    try {
+      const res = await fetch('/api/settings/public');
+      const data = await res.json();
+      if (data.ok) {
+        voiceRate = parseFloat(data.settings.voice_rate) || 0.85;
+        paceSeconds = parseFloat(data.settings.countdown_pace_seconds) || 1.6;
+      }
+    } catch (err) {
+      console.warn('No se pudo cargar la configuración de voz, usando valores por defecto.');
+    }
   }
 
   // ---------- Voz (Web Speech API) ----------
@@ -33,14 +54,17 @@
     window.speechSynthesis.onvoiceschanged = loadVoices;
   }
 
-  function speak(text, { rate = 1, volume = 1 } = {}) {
+  // speak() ESPERA a que la voz termine de decir la frase antes de continuar.
+  // Así el número/animación en pantalla y lo que dice la voz siempre quedan
+  // alineados, en vez de que la voz se adelante o se atrase.
+  function speak(text, { rate } = {}) {
     return new Promise((resolve) => {
       if (!window.speechSynthesis) return resolve();
       const utter = new SpeechSynthesisUtterance(text);
       utter.lang = 'es-ES';
       if (spanishVoice) utter.voice = spanishVoice;
-      utter.rate = rate;
-      utter.volume = volume;
+      utter.rate = rate != null ? rate : voiceRate;
+      utter.volume = 1;
       utter.onend = resolve;
       utter.onerror = resolve;
       window.speechSynthesis.speak(utter);
@@ -49,6 +73,17 @@
 
   function wait(ms) {
     return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
+  // Muestra el número Y dice la palabra, y espera lo que dure lo más largo
+  // entre la voz y el "ritmo" configurado por el administrador — así nunca
+  // se ven descoordinados.
+  async function speakNumberSynced(n, numberEl) {
+    numberEl.textContent = String(n);
+    numberEl.style.animation = 'none';
+    void numberEl.offsetWidth;
+    numberEl.style.animation = 'countdown-pop 0.5s ease';
+    await Promise.all([speak(String(n)), wait(paceSeconds * 1000)]);
   }
 
   // ---------- Confeti ----------
@@ -103,7 +138,7 @@
     if (!confettiRunning) requestAnimationFrame(tick);
   }
 
-  // ---------- Reel (carrete tipo máquina de sorteo) ----------
+  // ---------- Reel (carrete tipo máquina de sorteo, modo nombre) ----------
   const REEL_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
 
   function buildReel(targetText) {
@@ -127,8 +162,6 @@
       return interval;
     });
 
-    // Los carretes se van "clavando" de izquierda a derecha, como una
-    // máquina de sorteo, hasta completar el nombre/código ganador.
     const lockDelay = totalDurationMs / slots.length;
     for (let i = 0; i < slots.length; i++) {
       await wait(lockDelay);
@@ -136,6 +169,70 @@
       slots[i].slot.textContent = slots[i].targetChar === ' ' ? '·' : slots[i].targetChar;
       slots[i].slot.classList.add('locked');
     }
+  }
+
+  // ---------- Info de la rifa (Gran Rifa / Inicio / Fin / Condiciones) ----------
+  const DIAS = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
+  function formatFecha(isoDate) {
+    if (!isoDate) return '—';
+    const [y, m, d] = isoDate.split('-').map(Number);
+    const date = new Date(y, m - 1, d);
+    return `${String(d).padStart(2, '0')}/${String(m).padStart(2, '0')}/${y} (${DIAS[date.getDay()]})`;
+  }
+
+  async function refreshRaffleInfoCard() {
+    const card = document.getElementById('raffle-info-card');
+    try {
+      const res = await fetch('/api/settings/public');
+      const data = await res.json();
+      if (!data.ok) return;
+      const s = data.settings;
+      if (s.raffle_info_visible === 'true') {
+        document.getElementById('info-gran-rifa').textContent = `GRAN RIFA: ${s.raffle_prize_name || '—'}`;
+        document.getElementById('info-start').textContent = formatFecha(s.raffle_start_date);
+        document.getElementById('info-end').textContent = formatFecha(s.raffle_end_date);
+        document.getElementById('info-conditions').textContent = s.raffle_conditions || '';
+        card.classList.remove('hidden');
+      } else {
+        card.classList.add('hidden');
+      }
+    } catch (err) {
+      console.warn('No se pudo cargar la información de la rifa.');
+    }
+  }
+
+  // ---------- Secuencia compartida: cuenta regresiva de selección + revelación ----------
+  // 1) Cuenta 10 -> 0 hablada (elige al ganador).
+  // 2) "Ya tengo un feliz ganador/a" (con animación).
+  // 3) Cuenta 5 -> 0 hablada (para revelar).
+  // 4) Revelar con confeti + mensajes finales.
+  async function runSelectionCountdown() {
+    showOnly('countdown');
+    for (let n = 10; n >= 0; n--) {
+      await speakNumberSynced(n, els.countdownNumber);
+    }
+  }
+
+  async function runRevealCountdown() {
+    showOnly('revealCountdown');
+    for (let n = 5; n >= 0; n--) {
+      await speakNumberSynced(n, els.revealCountdownNumber);
+    }
+  }
+
+  async function announceWinnerFound() {
+    await speak('En estos momentos ya tengo un feliz ganador, o ganadora.');
+  }
+
+  async function celebrateWinner(winnerLabel, prize, winnerNameForVoice) {
+    showOnly('winner');
+    els.winnerName.textContent = winnerLabel;
+    els.winnerPrize.textContent = `Premio: ${prize}`;
+    burstConfetti(4500);
+
+    await speak(`¡Felicitaciones ${winnerNameForVoice}! Te ganaste: ${prize}. Por favor acércate a reclamar tu premio.`);
+    await speak('Muchas gracias por participar. Nos vemos en la próxima rifa.');
+    await refreshRaffleInfoCard(); // ya se jugó -> el servidor oculta la info, esto la refleja
   }
 
   // ---------- Eventos del servidor ----------
@@ -149,37 +246,41 @@
     showOnly('idle');
   });
 
-  socket.on('draw:start', async ({ prize, winner }) => {
-    // 1) Cuenta regresiva hablada, 10 -> 0
-    showOnly('countdown');
-    for (let n = 10; n >= 0; n--) {
-      els.countdownNumber.textContent = String(n);
-      els.countdownNumber.style.animation = 'none';
-      // Forzar reinicio de la animación en cada número
-      void els.countdownNumber.offsetWidth;
-      els.countdownNumber.style.animation = 'countdown-pop 0.5s ease';
-      speak(String(n)); // no se espera: debe sonar al ritmo de 1 por segundo
-      await wait(950);
+  socket.on('draw:start', async (payload) => {
+    await loadVoiceSettings(); // por si el admin cambió la velocidad justo antes de iniciar
+
+    // 1) Cuenta regresiva de selección (10 -> 0)
+    await runSelectionCountdown();
+    await announceWinnerFound();
+
+    if (payload.mode === 'number') {
+      // Modo NÚMERO: mostrar cada ronda fallida antes del número ganador.
+      showOnly('missed');
+      for (const n of payload.missedNumbers) {
+        els.missedNumber.textContent = String(n);
+        document.getElementById('missed-text').textContent = 'No hay ganador. Nueva ronda...';
+        await speak(`El número es ${n}. No hay ganador. Nueva ronda.`);
+        await wait(400);
+      }
+
+      // 2) Cuenta regresiva de revelación (5 -> 0)
+      await runRevealCountdown();
+
+      // 3) Revelar número + nombre ganador
+      els.missedNumber.textContent = String(payload.winningNumber);
+      document.getElementById('missed-text').textContent = '¡Tenemos número ganador!';
+      await wait(600);
+      await celebrateWinner(`${payload.winner} — N.° ${payload.winningNumber}`, payload.prize, payload.winner);
+    } else {
+      // Modo NOMBRE: animación de carrete con el nombre ganador.
+      showOnly('spinning');
+      await spinReel(payload.winner, 3200);
+
+      // 2) Cuenta regresiva de revelación (5 -> 0)
+      await runRevealCountdown();
+
+      await celebrateWinner(payload.winner, payload.prize, payload.winner);
     }
-
-    await speak('¡Ya inicié la rifa!');
-
-    // 2) Animación de búsqueda del ganador + anuncio de suspenso
-    showOnly('spinning');
-    const spinPromise = spinReel(winner, 3200);
-    await Promise.all([
-      spinPromise,
-      speak('En estos momentos ya tengo a la persona ganadora...')
-    ]);
-
-    // 3) Revelar ganador con celebración
-    showOnly('winner');
-    els.winnerName.textContent = winner;
-    els.winnerPrize.textContent = `Premio: ${prize}`;
-    burstConfetti(4500);
-
-    await speak(`¡Felicitaciones ${winner}! Te ganaste: ${prize}. Por favor acércate a reclamar tu premio.`);
-    await speak('Muchas gracias por participar. Nos vemos en la próxima rifa.');
   });
 
   // ---------- Pantalla completa (para TV) ----------
@@ -191,23 +292,22 @@
     }
   });
 
+  // ---------- Arranque ----------
   showOnly('idle');
+  loadVoiceSettings();
+  refreshRaffleInfoCard();
+  setInterval(refreshRaffleInfoCard, 15000); // por si el admin la activa mientras esta pantalla ya está abierta
 
-  // Los navegadores bloquean la voz hasta que hay un clic humano en la
-  // página. Este botón "desbloquea" el audio con una frase corta y silenciosa
-  // en volumen, para que luego toda la secuencia hablada suene sin problema.
   const enableSoundBtn = document.getElementById('enable-sound-btn');
   const soundReadyMsg = document.getElementById('sound-ready-msg');
   if (enableSoundBtn) {
     enableSoundBtn.addEventListener('click', async () => {
-      await speak('Sonido activado.', { volume: 1 });
+      await speak('Sonido activado.');
       enableSoundBtn.classList.add('hidden');
       soundReadyMsg.classList.remove('hidden');
     });
   }
 
-  // Registrar el service worker: esta pantalla también es instalable
-  // como app aparte (manifest-pantalla.json), independiente del panel admin.
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/service-worker.js').catch((err) => {
       console.warn('No se pudo registrar el service worker:', err);
