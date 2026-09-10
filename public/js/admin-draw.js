@@ -2,7 +2,12 @@
   const socket = io();
 
   const prizeInput = document.getElementById('draw_prize');
+  const modeSelect = document.getElementById('draw_mode');
+  const nameFields = document.getElementById('mode-name-fields');
+  const numberFields = document.getElementById('mode-number-fields');
   const participantsInput = document.getElementById('draw_participants');
+  const rangeMinInput = document.getElementById('draw_range_min');
+  const rangeMaxInput = document.getElementById('draw_range_max');
   const prepareBtn = document.getElementById('draw-prepare-btn');
   const startBtn = document.getElementById('draw-start-btn');
   const resetBtn = document.getElementById('draw-reset-btn');
@@ -16,6 +21,12 @@
     });
     return res.json();
   }
+
+  modeSelect.addEventListener('change', () => {
+    const isNumber = modeSelect.value === 'number';
+    nameFields.classList.toggle('hidden', isNumber);
+    numberFields.classList.toggle('hidden', !isNumber);
+  });
 
   function parseParticipants() {
     return participantsInput.value
@@ -37,23 +48,35 @@
 
   prepareBtn.addEventListener('click', async () => {
     const prize = prizeInput.value.trim();
-    const participants = parseParticipants();
-
     if (!prize) {
       statusEl.textContent = 'Falta indicar el premio.';
       return;
     }
-    if (participants.length === 0) {
-      statusEl.textContent = 'Falta registrar al menos un participante.';
-      return;
+
+    let payload;
+    if (modeSelect.value === 'number') {
+      const min = Number(rangeMinInput.value);
+      const max = Number(rangeMaxInput.value);
+      if (!(min < max)) {
+        statusEl.textContent = 'El número mínimo debe ser menor que el máximo.';
+        return;
+      }
+      payload = { mode: 'number', prize, min, max };
+    } else {
+      const participants = parseParticipants();
+      if (participants.length === 0) {
+        statusEl.textContent = 'Falta registrar al menos un participante.';
+        return;
+      }
+      payload = { mode: 'name', prize, participants };
     }
 
-    const data = await api('/api/draw/prepare', 'POST', { prize, participants });
+    const data = await api('/api/draw/prepare', 'POST', payload);
     if (!data.ok) {
       statusEl.textContent = data.error || 'No se pudo preparar la rifa.';
       return;
     }
-    statusEl.textContent = `Rifa preparada — ${participants.length} participante(s). Abre la pantalla pública y luego inicia el sorteo.`;
+    statusEl.textContent = `Rifa preparada (${data.state.participants.length} participante(s)). Abre la pantalla pública y luego inicia el sorteo.`;
     startBtn.disabled = false;
   });
 
