@@ -1,32 +1,38 @@
 const settingsModel = require('../models/settingsModel');
 
+const PUBLIC_KEYS = [
+  'platform_name',
+  'welcome_title',
+  'welcome_subtitle',
+  'welcome_button_text',
+  'color_primary',
+  'color_secondary',
+  'color_accent',
+  'voice_enabled',
+  'voice_rate',
+  'voice_volume',
+  'countdown_pace_seconds',
+  'sound_enabled',
+  'raffle_prize_name',
+  'raffle_start_date',
+  'raffle_end_date',
+  'raffle_conditions',
+  'raffle_info_visible'
+];
+
+async function buildPublicSettings() {
+  const all = await settingsModel.getAllSettings();
+  const publicSettings = {};
+  for (const key of PUBLIC_KEYS) {
+    publicSettings[key] = all[key] ?? null;
+  }
+  return publicSettings;
+}
+
 // GET /api/settings/public -> solo lo necesario para la pantalla de bienvenida / publica
 async function getPublicSettings(req, res) {
   try {
-    const all = await settingsModel.getAllSettings();
-    const publicKeys = [
-      'platform_name',
-      'welcome_title',
-      'welcome_subtitle',
-      'welcome_button_text',
-      'color_primary',
-      'color_secondary',
-      'color_accent',
-      'voice_enabled',
-      'voice_rate',
-      'voice_volume',
-      'countdown_pace_seconds',
-      'sound_enabled',
-      'raffle_prize_name',
-      'raffle_start_date',
-      'raffle_end_date',
-      'raffle_conditions',
-      'raffle_info_visible'
-    ];
-    const publicSettings = {};
-    for (const key of publicKeys) {
-      publicSettings[key] = all[key] ?? null;
-    }
+    const publicSettings = await buildPublicSettings();
     res.json({ ok: true, settings: publicSettings });
   } catch (err) {
     console.error(err);
@@ -53,6 +59,16 @@ async function updateSettingsHandler(req, res) {
       return res.status(400).json({ ok: false, error: 'No se enviaron datos para actualizar.' });
     }
     const settings = await settingsModel.setManySettings(body);
+
+    // Avisar EN VIVO a la pantalla pública (sin esperar a que ella pregunte):
+    // asi el checkbox "mostrar en pantalla" y cualquier otro cambio se ve
+    // de inmediato, sin tener que esperar ni recargar.
+    const io = req.app.get('io');
+    if (io) {
+      const publicSettings = await buildPublicSettings();
+      io.to('public_screen').emit('settings:updated', publicSettings);
+    }
+
     res.json({ ok: true, settings });
   } catch (err) {
     console.error(err);
