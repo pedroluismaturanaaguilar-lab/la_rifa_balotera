@@ -116,4 +116,3 @@ INSERT OR IGNORE INTO settings (key, value) VALUES
   ('raffle_end_date', ''),
   ('raffle_conditions', ''),
   ('raffle_info_visible', 'false');
-X  
