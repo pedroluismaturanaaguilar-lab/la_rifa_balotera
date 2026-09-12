@@ -1,12 +1,14 @@
 // Sube este número cada vez que cambies archivos estáticos importantes:
 // obliga a todos los dispositivos (incluyendo la app instalada) a botar
 // el caché viejo y pedir la versión nueva al servidor.
-const CACHE_NAME = 'rifa-ganadora-v2';
+const CACHE_NAME = 'rifa-ganadora-v3';
 const STATIC_ASSETS = [
   '/css/theme.css',
   '/js/particles.js',
   '/js/welcome.js',
   '/js/pantalla.js',
+  '/js/admin-draw.js',
+  '/js/admin-raffle-info.js',
   '/manifest.json',
   '/manifest-pantalla.json',
   '/icons/icon-192.png',
