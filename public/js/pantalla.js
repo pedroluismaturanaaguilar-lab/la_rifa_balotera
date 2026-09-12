@@ -180,22 +180,25 @@
     return `${String(d).padStart(2, '0')}/${String(m).padStart(2, '0')}/${y} (${DIAS[date.getDay()]})`;
   }
 
-  async function refreshRaffleInfoCard() {
+  function applyRaffleInfo(s) {
     const card = document.getElementById('raffle-info-card');
+    if (s.raffle_info_visible === 'true') {
+      document.getElementById('info-gran-rifa').textContent = `GRAN RIFA: ${s.raffle_prize_name || '—'}`;
+      document.getElementById('info-start').textContent = formatFecha(s.raffle_start_date);
+      document.getElementById('info-end').textContent = formatFecha(s.raffle_end_date);
+      document.getElementById('info-conditions').textContent = s.raffle_conditions || '';
+      card.classList.remove('hidden');
+    } else {
+      card.classList.add('hidden');
+    }
+  }
+
+  async function refreshRaffleInfoCard() {
     try {
       const res = await fetch('/api/settings/public');
       const data = await res.json();
       if (!data.ok) return;
-      const s = data.settings;
-      if (s.raffle_info_visible === 'true') {
-        document.getElementById('info-gran-rifa').textContent = `GRAN RIFA: ${s.raffle_prize_name || '—'}`;
-        document.getElementById('info-start').textContent = formatFecha(s.raffle_start_date);
-        document.getElementById('info-end').textContent = formatFecha(s.raffle_end_date);
-        document.getElementById('info-conditions').textContent = s.raffle_conditions || '';
-        card.classList.remove('hidden');
-      } else {
-        card.classList.add('hidden');
-      }
+      applyRaffleInfo(data.settings);
     } catch (err) {
       console.warn('No se pudo cargar la información de la rifa.');
     }
@@ -244,6 +247,15 @@
 
   socket.on('draw:reset', () => {
     showOnly('idle');
+  });
+
+  // Aviso INSTANTÁNEO cuando el admin guarda cambios (por ejemplo, marca
+  // "mostrar en pantalla" la información de la rifa). Ya no hay que esperar
+  // al chequeo periódico ni recargar la página.
+  socket.on('settings:updated', (publicSettings) => {
+    applyRaffleInfo(publicSettings);
+    if (publicSettings.voice_rate) voiceRate = parseFloat(publicSettings.voice_rate) || voiceRate;
+    if (publicSettings.countdown_pace_seconds) paceSeconds = parseFloat(publicSettings.countdown_pace_seconds) || paceSeconds;
   });
 
   socket.on('draw:start', async (payload) => {
